@@ -2,7 +2,6 @@ require('dotenv').config();
 const express = require('express');
 var cors = require('cors')
 const axios = require('axios');
-const bodyParser = require('body-parser');
 const pino = require('express-pino-logger')();
 
 const app = express();
@@ -11,22 +10,27 @@ const http = require('http');
 const server = http.createServer(app);
 const io = require("socket.io")(server);
 
-app.use(bodyParser.urlencoded({ extended: false }));
+app.use(express.json());
 app.use(pino);
 app.use(cors())
 
 app.use(express.static(__dirname + '/client/'));
 
+app.get('/rotate',(req,res)=>{
+  console.log("sending.............",req.body)
+  io.emit("rotate",req.body)
+  res.sendStatus(200)
+})
 
+app.get("/world",(req,res)=>{
+  io.emit("world",req.body)
+  res.sendStatus(200)
+})
 
 io.on('connection', (socket) => {
     console.log('a user connected');
-  
     
-    app.get('/changeindex',(req,res)=>{
-      socket.emit("finger_update",req.query.angle)
-      res.send("Socket request sent with  " + req.query.angle)
-    })
+   
 
 //     // socket.on("animateAvatar",sigml=>{
 //     //     console.log("mssg from react",sigml)

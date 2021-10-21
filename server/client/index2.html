@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/three@0.125.2/build/three.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.125.2/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.125.2/examples/js/controls/OrbitControls.js"></script>
+	
+	<meta http-equiv="Access-Control-Allow-Origin" content="*">
+	<meta http-equiv="Access-Control-Allow-Methods" content="GET">
+	<script src="https://cdn.socket.io/4.1.2/socket.io.min.js" integrity="sha384-toS6mmwu70G0fw54EGlWWeA4z3dyJ+dlXBtSURSKN4vyRFOcxd3Bzjj/AoOwY+Rg" crossorigin="anonymous"></script>
+</head>
+<body>
+    <script>
+        let camera, scene, renderer, clock, leftHandIndex1, leftHandIndex2, leftHandIndex3, leftHandMiddle1,
+		leftHandMiddle2, leftHandMiddle3, leftHandRing1, leftHandRing2, leftHandRing3, leftHandPinky1, leftHandPinky2,
+		leftHandPinky3, leftHandThumb1, leftHandThumb2, leftHandThumb3, leftArm, leftForeArm, leftHand, model
+
+		let arm1, arm2, body, arrowHelperLine
+let x=0
+init();
+animate();
+
+function init() {
+
+	camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 1000 );
+	camera.position.set( 0,2,2);
+
+	camera.lookAt(0,0,0)
+	
+	clock = new THREE.Clock();
+
+	scene = new THREE.Scene();
+	scene.background = new THREE.Color( 0xffffff );
+
+	const light = new THREE.HemisphereLight( 0xbbbbff, 0x444422 );
+	light.position.set( 0, 1, 0 );
+	scene.add( light );
+
+	const size = 10;
+	const divisions = 10;
+
+	const gridHelper = new THREE.GridHelper( size, divisions );
+	scene.add( gridHelper );
+
+	// model
+	const loader = new THREE.GLTFLoader();
+	loader.load( 'lina.glb', function ( gltf ) {
+
+		
+
+	model = gltf.scene;
+    scene.add(model)
+
+    console.log(model)
+
+	leftArm = model.getObjectByName( 'mixamorig8LeftArm' );
+	leftForeArm = model.getObjectByName( 'mixamorig8LeftForeArm' );
+	leftHand = model.getObjectByName( 'mixamorig8LeftHand' );
+	leftShoulder = model.getObjectByName( 'mixamorig8LeftShoulder' );
+	leftLeg = model.getObjectByName( 'mixamorig8LeftLeg' ); 
+
+    const axesHelper = new THREE.AxesHelper( 1000 );
+    scene.add( axesHelper );
+
+    const axesHelper2 = new THREE.AxesHelper( 1000 );
+	leftArm.add(axesHelper2)
+
+	const helper = new THREE.SkeletonHelper( model );
+	scene.add( helper );
+
+	const shoulderDirection = leftShoulder.getWorldQuaternion()
+
+	let startVector2 = leftShoulder.getWorldPosition()
+	// const originArm = new THREE.Vector3( 0,0,0 );
+	let endVector2 = new THREE.Vector3(1,1,1).normalize()
+
+	const length = 1
+	const hex = "#000000"
+
+	let dirVector2 = new THREE.Vector3()
+
+	dirVector2.subVectors(startVector2,endVector2).normalize()
+
+	arrowHelperShoulder = new THREE.ArrowHelper( endVector2, startVector2, length, hex )
+
+	scene.add(arrowHelperShoulder)
+
+	let startVector3 = leftArm.getWorldPosition()
+	const originArm = new THREE.Vector3( 0,0,0 );
+	let endVector3 = new THREE.Vector3(0,1,0).normalize()
+
+	let dirVector3 = new THREE.Vector3()
+
+	dirVector3.subVectors(startVector3,endVector3).normalize()
+
+
+	arrowHelperArm = new THREE.ArrowHelper( endVector3, startVector3, length, hex )
+
+	scene.add(arrowHelperArm)
+
+	leftShoulder.rotation.x = 0
+	leftShoulder.rotation.y = 0
+	leftShoulder.rotation.z = 0
+
+	leftArm.rotation.x = 0
+	leftArm.rotation.y = 0
+	leftArm.rotation.z = 0
+
+	// leftArm.applyQuaternion(new THREE.Quaternion())
+	// leftShoulder.applyQuaternion(arrowHelperLine2.getWorldQuaternion())
+
+	// leftShoulder.applyQuaternion(arrowHelperShoulder.getWorldQuaternion())
+
+	// leftArm.applyQuaternion(arrowHelperShoulder.getWorldQuaternion().invert())
+
+	leftArm.applyQuaternion(arrowHelperArm.getWorldQuaternion())
+
+	} );
+
+	renderer = new THREE.WebGLRenderer( { antialias: true } );
+	renderer.setPixelRatio( window.devicePixelRatio );
+	renderer.setSize( window.innerWidth, window.innerHeight );
+	renderer.outputEncoding = THREE.sRGBEncoding;
+	document.body.appendChild( renderer.domElement );
+
+	window.addEventListener( 'resize', onWindowResize, false );
+
+	const controls = new THREE.OrbitControls( camera, renderer.domElement );
+	controls.target.set( 0, 1, 0 );
+	controls.update();
+
+	
+}
+
+function onWindowResize() {
+
+	camera.aspect = window.innerWidth / window.innerHeight;
+	camera.updateProjectionMatrix();
+
+	renderer.setSize( window.innerWidth, window.innerHeight );
+}
+
+const socket = io()
+
+socket.on("connect", () => {
+	console.log("user connected....message from client")
+});
+
+socket.on("rotate",(body)=>{
+
+		body.forEach((element)=>{
+
+			bone = model.getObjectByName( String(element.part) )
+			
+			if(element.direction=="x"){
+				bone.rotation.x = element.angle
+				// leftArm.setRotationFromAxisAngle(leftArm.localToWorld(new THREE.Vector3(1,0,0)).normalize(),element.angle)
+				// leftArm.rotateOnWorldAxis(new THREE.Vector3(1,0,0).normalize(),element.angle)
+				// leftForeArm.rotateOnWorldAxis(new THREE.Vector3(1,0,0).normalize(),-element.angle)
+			}
+			else if(element.direction=="y"){
+				
+				// leftArm.rotateOnWorldAxis(new THREE.Vector3(0,1,0).normalize(),element.angle)
+				// leftForeArm.rotateOnWorldAxis(new THREE.Vector3(0,1,0).normalize(),-element.angle)
+			}
+			else if(element.direction=="z"){
+				bone.rotation.z = element.angle
+			}
+		})
+	})
+
+
+
+socket.on('world',(data)=>{
+
+
+// if(ah1){
+// 	scene.remove(ah1)
+// }
+// if(ah2){
+// 	scene.remove(ah1)
+// }
+// if(ah3){
+// 	scene.remove(ah1)
+// }
+// if(ah4){
+// 	scene.remove(ah1)
+// }
+// if(ah5){
+// 	scene.remove(ah1)
+// }
+// if(ah6){
+// 	scene.remove(ah1)
+// }
+
+// ah1 = drawVectors(data[11],data[13])
+// ah2 = drawVectors(data[13],data[15])
+// ah3 = drawVectors(data[15],data[17])
+// ah4 = drawVectors(data[17],data[19])
+// ah5 = drawVectors(data[19],data[15])
+// ah6 = drawVectors(data[15],data[20])
+
+
+// scene.add(ah1)
+// scene.add(ah2)
+// scene.add(ah3)
+// scene.add(ah4)
+// scene.add(ah5)
+// scene.add(ah6)
+
+if(arm1){
+	scene.remove(arm1)
+}
+
+if(arm2){
+	scene.remove(arm2)
+}
+
+if(body){
+	scene.remove(body)
+}
+if(arrowHelperLine){
+	scene.remove(arrowHelperLine)
+}
+
+	const material = new THREE.LineBasicMaterial( { color: 0x0000ff } );
+
+	let pointsArm1 = [];
+
+	pointsArm1.push( new THREE.Vector3( data[11].x,data[11].y,data[11].z ) );
+	pointsArm1.push( new THREE.Vector3( data[13].x,data[13].y,data[13].z ) );
+	pointsArm1.push( new THREE.Vector3( data[15].x,data[15].y,data[15].z ) );
+	pointsArm1.push( new THREE.Vector3( data[17].x,data[17].y,data[17].z ) );
+	pointsArm1.push( new THREE.Vector3( data[19].x,data[19].y,data[19].z ) );
+	pointsArm1.push( new THREE.Vector3( data[15].x,data[15].y,data[15].z ) );
+	pointsArm1.push( new THREE.Vector3( data[21].x,data[21].y,data[21].z ) );
+
+	let pointsArm2 = [];
+
+	pointsArm2.push( new THREE.Vector3( data[12].x,data[12].y,data[12].z ) );
+	pointsArm2.push( new THREE.Vector3( data[14].x,data[14].y,data[14].z ) );
+	pointsArm2.push( new THREE.Vector3( data[16].x,data[16].y,data[16].z ) );
+	pointsArm2.push( new THREE.Vector3( data[18].x,data[18].y,data[18].z ) );
+	pointsArm2.push( new THREE.Vector3( data[20].x,data[20].y,data[20].z ) );
+	pointsArm2.push( new THREE.Vector3( data[16].x,data[16].y,data[16].z ) );
+	pointsArm2.push( new THREE.Vector3( data[22].x,data[22].y,data[22].z ) );
+
+	let bodyparts = []
+
+	bodyparts.push( new THREE.Vector3( data[12].x,data[12].y,data[12].z ) );
+	bodyparts.push( new THREE.Vector3( data[11].x,data[11].y,data[11].z ) );
+	bodyparts.push( new THREE.Vector3( data[23].x,data[23].y,data[23].z ) );
+	bodyparts.push( new THREE.Vector3( data[24].x,data[24].y,data[24].z ) );
+	bodyparts.push( new THREE.Vector3( data[12].x,data[12].y,data[12].z ) );
+
+	let geometry1 = new THREE.BufferGeometry().setFromPoints( pointsArm1 );
+	let geometry2 = new THREE.BufferGeometry().setFromPoints( pointsArm2 );
+	let geometry3 = new THREE.BufferGeometry().setFromPoints( bodyparts );
+
+	arm1 = new THREE.Line( geometry1, material );
+	arm2 = new THREE.Line( geometry2, material );
+	body = new THREE.Line( geometry3, material );	
+
+	scene.add( arm1 );
+	scene.add( arm2 );
+	scene.add(body);
+
+
+let startVector = new THREE.Vector3( data[11].x,data[11].y,data[11].z );
+// const originArm = new THREE.Vector3( 0,0,0 );
+let endVector = new THREE.Vector3( data[13].x,data[13].y,data[13].z );
+
+let dirVector = new THREE.Vector3()
+
+dirVector.subVectors(startVector,endVector).normalize()
+
+const length = 0.5
+const hexArm = 0xffff00
+const hexForeArm = "#000000"
+
+arrowHelperLine = new THREE.ArrowHelper( dirVector, endVector, length, hexArm )
+
+scene.add(arrowHelperLine)
+})
+
+
+
+function animate() {
+
+	requestAnimationFrame( animate )
+		// leftArm.rotation.x = 1
+		// leftArm.rotation.z = 1
+	// leftShoulder.rotation.z = 0
+	// leftShoulder.rotation.x = 0
+	// leftShoulder.rotation.y = 0
+	// leftShoulder.rotation.x = 3
+	// leftArm.rotation.x = 1 
+	// leftArm.rotation.z += 0.05
+	// leftArm.rotation.z = -1.5
+	// leftArm.rotation.x = 0
+	// leftArm.rotation.y = 0
+	// leftShoulder.rotation.z += 0.05
+
+	// leftArm.rotation.y = 1.5
+	// leftArm.rotation.x += 0.05
+	// leftArm.rotation.y += 0.05
+	
+
+	renderer.render( scene, camera )
+}
+    </script>
+</body>
+</html>
