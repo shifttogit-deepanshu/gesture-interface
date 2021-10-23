@@ -27,6 +27,11 @@ app.get("/world",(req,res)=>{
   res.sendStatus(200)
 })
 
+app.get("/hands",(req,res)=>{
+  io.emit("hands",req.body)
+  res.sendStatus(200)
+})
+
 io.on('connection', (socket) => {
     console.log('a user connected');
     

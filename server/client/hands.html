@@ -1,0 +1,979 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/three@0.125.2/build/three.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.125.2/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.125.2/examples/js/controls/OrbitControls.js"></script>
+	
+	<meta http-equiv="Access-Control-Allow-Origin" content="*">
+	<meta http-equiv="Access-Control-Allow-Methods" content="GET">
+	<script src="https://cdn.socket.io/4.1.2/socket.io.min.js" integrity="sha384-toS6mmwu70G0fw54EGlWWeA4z3dyJ+dlXBtSURSKN4vyRFOcxd3Bzjj/AoOwY+Rg" crossorigin="anonymous"></script>
+</head>
+<body>
+    <script>
+        let camera, scene, renderer, clock, leftHandIndex1, leftHandIndex2, leftHandIndex3, leftHandMiddle1,
+		leftHandMiddle2, leftHandMiddle3, leftHandRing1, leftHandRing2, leftHandRing3, leftHandPinky1, leftHandPinky2,
+		leftHandPinky3, leftHandThumb1, leftHandThumb2, leftHandThumb3, leftArm, leftForeArm, leftHand, model
+
+		let arm1,arm2,body,arrowHelperArmRef,arrowHelperArm,arrowHelperShoulder,arrowHelperForeArm,arrowHelperForeArmRef
+        let hand, index, middle, ring, pinky, thumb , arrowHelperHandY,arrowHelperHandZ, arrowHelperHandRef, arrowHelperIndexRef1, arrowHelperIndexRef2, arrowHelperIndexRef3
+		let globalArmQuaternion
+init();
+animate();
+
+function init() {
+
+	camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 0.01, 1000);
+	camera.position.set( 0,2,2);
+
+	camera.lookAt(0,0,0)
+	
+	clock = new THREE.Clock();
+
+	scene = new THREE.Scene();
+	scene.background = new THREE.Color( 0xffffff );
+
+	const light = new THREE.HemisphereLight( 0xbbbbff, 0x444422 );
+	light.position.set( 0, 1, 0 );
+	scene.add( light );
+
+	const size = 10;
+	const divisions = 10;
+
+	const gridHelper = new THREE.GridHelper( size, divisions );
+	scene.add( gridHelper );
+
+	// model
+	const loader = new THREE.GLTFLoader();
+	loader.load( 'lina.glb', function ( gltf ) {
+
+		
+
+	model = gltf.scene;
+    scene.add(model)
+	console.log(model)
+
+	model.traverse(function(obj) { obj.frustumCulled = false; });
+
+	leftShoulder = model.getObjectByName( 'mixamorig8LeftShoulder' );
+	leftArm = model.getObjectByName( 'mixamorig8LeftArm' );
+	leftForeArm = model.getObjectByName( 'mixamorig8LeftForeArm' );
+    leftHand = model.getObjectByName( 'mixamorig8LeftHand' );
+	leftHandIndex1 = model.getObjectByName("mixamorig8LeftHandIndex1")
+	leftHandIndex2 = model.getObjectByName("mixamorig8LeftHandIndex2")
+	leftHandIndex3 = model.getObjectByName("mixamorig8LeftHandIndex3")
+
+	leftHandMiddle1 = model.getObjectByName("mixamorig8LeftHandMiddle1")
+	leftHandMiddle2 = model.getObjectByName("mixamorig8LeftHandMiddle2")
+	leftHandMiddle3 = model.getObjectByName("mixamorig8LeftHandMiddle3")
+
+	leftHandRing1 = model.getObjectByName("mixamorig8LeftHandRing1")
+	leftHandRing2 = model.getObjectByName("mixamorig8LeftHandRing2")
+	leftHandRing3 = model.getObjectByName("mixamorig8LeftHandRing3")
+
+	leftHandPinky1 = model.getObjectByName("mixamorig8LeftHandPinky1")
+	leftHandPinky2 = model.getObjectByName("mixamorig8LeftHandPinky2")
+	leftHandPinky3 = model.getObjectByName("mixamorig8LeftHandPinky3")
+
+	leftHandThumb1 = model.getObjectByName("mixamorig8LeftHandThumb1")
+	leftHandThumb2 = model.getObjectByName("mixamorig8LeftHandThumb2")
+	leftHandThumb3 = model.getObjectByName("mixamorig8LeftHandThumb3")
+
+	console.log(leftHand)
+
+    const axesHelper = new THREE.AxesHelper( 100 );
+    scene.add( axesHelper );
+
+    const axesHelper2 = new THREE.AxesHelper( 100);
+	leftHandIndex1.add(axesHelper2)
+
+	const helper = new THREE.SkeletonHelper( model );
+	scene.add( helper )	
+	
+	
+	
+	leftArm.rotation.x = 0
+	leftArm.rotation.y = 0
+	leftArm.rotation.z = 0
+
+	leftForeArm.rotation.x = 0
+	leftForeArm.rotation.y = 0
+	leftForeArm.rotation.z = 0
+
+	leftShoulder.rotation.x = 0
+	leftShoulder.rotation.y = 0
+	leftShoulder.rotation.z = 0
+
+	leftHand.rotation.x = 0
+	leftHand.rotation.y = 0
+	leftHand.rotation.z = 0
+
+	// const length = 2
+	// const hexShoulder = "#000000"
+	// const hexArm = "#100000"
+	// const hexForeArm = "#001010"
+
+	// //Aligning vector ForeArm //////////////////////////////////////////////////////////////////
+	
+	// let startVectorForeArm = leftForeArm.getWorldPosition()
+	// let endVectorForeArm = new THREE.Vector3(1,0,0).normalize()
+
+	// // let dirVectorForeArm = new THREE.Vector3()
+
+	// // dirVectorShoulder.subVectors(endVector,startVector).normalize()	
+
+	// let arrowHelperForeArm = new THREE.ArrowHelper( endVectorForeArm, startVectorForeArm, length, hexForeArm )
+
+
+	// //Aligning vector Arm //////////////////////////////////////////////////////////////////
+	// let startVectorArm = leftArm.getWorldPosition()
+	// let endVectorArm = new THREE.Vector3(1,1,1).normalize()
+
+	// // let dirVectorArm = new THREE.Vector3()
+
+	// // dirVectorShoulder.subVectors(endVector,startVector).normalize()
+
+	
+	// //Aligning vector Shoulder //////////////////////////////////////////////////////////////////
+
+	// let arrowHelperArm = new THREE.ArrowHelper( endVectorArm, startVectorArm, length, hexArm )
+
+	// let startVectorShoulder = leftShoulder.getWorldPosition()
+	// // const originArm = new THREE.Vector3( 0,0,0 );
+	// let endVectorShoulder = new THREE.Vector3(1,0,0).normalize();
+
+	// // let dirVectorShoulder = new THREE.Vector3()
+
+	// // dirVectorShoulder.subVectors(endVector,startVector).normalize()
+
+	// // const length = 2
+	// // const hexArm = 0xffff00
+
+
+	// let arrowHelperShoulder = new THREE.ArrowHelper( endVectorShoulder, startVectorShoulder, length, hexShoulder )
+
+	// leftForeArm.applyQuaternion(arrowHelperForeArm.getWorldQuaternion())	
+	
+	// leftArm.applyQuaternion(arrowHelperArm.getWorldQuaternion())
+
+	// leftShoulder.applyQuaternion(arrowHelperShoulder.getWorldQuaternion())
+
+	// leftArm.applyQuaternion(arrowHelperShoulder.getWorldQuaternion().invert())
+
+	// leftForeArm.applyQuaternion(arrowHelperArm.getWorldQuaternion().invert())
+
+	// scene.add(arrowHelperArm)
+	// scene.add(arrowHelperShoulder)
+	// scene.add(arrowHelperForeArm)
+
+	
+	const length = 2
+	const hex = "#000000"
+	
+	// let startHand = leftHand.getWorldPosition()
+
+	// let endHand = new THREE.Vector3(0,0,1)
+
+	// let dirVectorHand = new THREE.Vector3()
+
+	// dirVectorHand.subVectors(endHand,startHand).normalize()	
+
+	// handAngle = dirVectorHand.angleTo(new THREE.Vector3(1,0,0))
+
+	// leftHand.rotateOnWorldAxis(new THREE.Vector3(0,1,0).normalize(),handAngle)
+
+	// // console.log((-handAngleY+(10*(Math.PI/180)))*(180/Math.PI) + "degree")
+
+	// // console.log(-handAngle)
+
+	// arrowHelperHand = new THREE.ArrowHelper( endHand, startHand, length, hex )
+
+	// scene.add(arrowHelperHand)
+
+	// leftHand.applyQuaternion(arrowHelperHand.getWorldQuaternion())
+
+
+		
+	} );
+
+	renderer = new THREE.WebGLRenderer( { antialias: true } );
+	renderer.setPixelRatio( window.devicePixelRatio );
+	renderer.setSize( window.innerWidth, window.innerHeight );
+	renderer.outputEncoding = THREE.sRGBEncoding;
+	document.body.appendChild( renderer.domElement );
+
+	window.addEventListener( 'resize', onWindowResize, false );
+
+	const controls = new THREE.OrbitControls( camera, renderer.domElement );
+	controls.target.set( 0, 1, 0 );
+	controls.update();
+
+}
+
+function onWindowResize() {
+
+	camera.aspect = window.innerWidth / window.innerHeight;
+	camera.updateProjectionMatrix();
+
+	renderer.setSize( window.innerWidth, window.innerHeight );
+}
+
+
+
+const socket = io()
+
+socket.on("connect", () => {
+	console.log("user connected....message from client")
+});
+
+
+socket.on('hands',(data)=>{
+	leftHand.rotation.x = 0
+	leftHand.rotation.y = 0
+	leftHand.rotation.z = 0
+
+	leftHandIndex1.rotation.x = 0
+	leftHandIndex1.rotation.y = 0
+	leftHandIndex1.rotation.z = 0
+
+	leftHandIndex2.rotation.x = 0
+	leftHandIndex2.rotation.y = 0
+	leftHandIndex2.rotation.z = 0
+
+	leftHandIndex3.rotation.x = 0
+	leftHandIndex3.rotation.y = 0
+	leftHandIndex3.rotation.z = 0
+    // if(arm1){
+    //     scene.remove(arm1)
+    // }
+    // if(arm2){
+    //     scene.remove(arm2)
+    // }
+    // if(body){
+    //     scene.remove(body)
+    // }
+	
+    if(hand){
+        scene.remove(hand)
+    }
+    if(index){
+        scene.remove(index)
+    }
+    if(middle){
+        scene.remove(middle)
+    }
+    if(ring){
+        scene.remove(ring)
+    }
+    if(pinky){
+        scene.remove(pinky)
+    }
+	if(arrowHelperHandY){
+		scene.remove(arrowHelperHandY)
+	}
+	if(arrowHelperHandRef){
+		scene.remove(arrowHelperHandRef)
+	}
+	if(thumb){
+		scene.remove(thumb)
+	}
+	if(arrowHelperIndexRef1){
+		scene.remove(arrowHelperIndexRef1)
+	}
+	if(arrowHelperIndexRef2){
+		scene.remove(arrowHelperIndexRef2)
+	}
+
+
+
+	if(arm1){
+	scene.remove(arm1)
+	}
+
+	if(arm2){
+		scene.remove(arm2)
+	}
+
+	if(body){
+		scene.remove(body)
+	}
+	if(arrowHelperArmRef){
+		scene.remove(arrowHelperArmRef)
+	}
+	if(arrowHelperArm){
+		scene.remove(arrowHelperArm)
+	}
+	if(arrowHelperShoulder){
+		scene.remove(arrowHelperShoulder)
+	}
+	if(arrowHelperForeArmRef){
+		scene.remove(arrowHelperForeArmRef)
+	}
+
+
+
+
+	const material = new THREE.LineBasicMaterial( { color: 0x0000ff } );
+
+    let pointsHands = [];
+
+    pointsHands.push( new THREE.Vector3( data[0].x,data[0].y,data[0].z ) );
+    pointsHands.push( new THREE.Vector3( data[5].x,data[5].y,data[5].z ) );
+    pointsHands.push( new THREE.Vector3( data[9].x,data[9].y,data[9].z ) );
+    pointsHands.push( new THREE.Vector3( data[13].x,data[13].y,data[13].z ) );
+    pointsHands.push( new THREE.Vector3( data[17].x,data[17].y,data[17].z ) );
+    pointsHands.push( new THREE.Vector3( data[0].x,data[0].y,data[0].z ) );
+
+    let pointsIndex = []
+    pointsIndex.push( new THREE.Vector3( data[5].x,data[5].y,data[5].z ) );
+    pointsIndex.push( new THREE.Vector3( data[6].x,data[6].y,data[6].z ) );
+    pointsIndex.push( new THREE.Vector3( data[7].x,data[7].y,data[7].z ) );
+    pointsIndex.push( new THREE.Vector3( data[8].x,data[8].y,data[8].z ) );
+
+    let pointsMiddle = []
+    pointsMiddle.push( new THREE.Vector3( data[9].x,data[9].y,data[9].z ) );
+    pointsMiddle.push( new THREE.Vector3( data[10].x,data[10].y,data[10].z ) );
+    pointsMiddle.push( new THREE.Vector3( data[11].x,data[11].y,data[11].z ) );
+    pointsMiddle.push( new THREE.Vector3( data[12].x,data[12].y,data[12].z ) );
+    
+    let pointsRing = []
+    pointsRing.push( new THREE.Vector3( data[13].x,data[13].y,data[13].z ) );
+    pointsRing.push( new THREE.Vector3( data[14].x,data[14].y,data[14].z ) );
+    pointsRing.push( new THREE.Vector3( data[15].x,data[15].y,data[15].z ) );
+    pointsRing.push( new THREE.Vector3( data[16].x,data[16].y,data[16].z ) );
+
+    let pointsPinky = []
+    pointsPinky.push( new THREE.Vector3( data[17].x,data[17].y,data[17].z ) );
+    pointsPinky.push( new THREE.Vector3( data[18].x,data[18].y,data[18].z ) );
+    pointsPinky.push( new THREE.Vector3( data[19].x,data[19].y,data[19].z ) );
+    pointsPinky.push( new THREE.Vector3( data[20].x,data[20].y,data[20].z ) );
+
+	let pointsThumb = []
+    pointsThumb.push( new THREE.Vector3( data[0].x,data[0].y,data[0].z ) );
+    pointsThumb.push( new THREE.Vector3( data[1].x,data[1].y,data[1].z ) );
+    pointsThumb.push( new THREE.Vector3( data[2].x,data[2].y,data[2].z ) );
+    pointsThumb.push( new THREE.Vector3( data[3].x,data[3].y,data[3].z ) );
+	pointsThumb.push( new THREE.Vector3( data[4].x,data[4].y,data[4].z ) );
+
+    let geometry1 = new THREE.BufferGeometry().setFromPoints( pointsHands );
+    let geometry2 = new THREE.BufferGeometry().setFromPoints( pointsIndex );
+    let geometry3 = new THREE.BufferGeometry().setFromPoints( pointsMiddle );
+    let geometry4 = new THREE.BufferGeometry().setFromPoints( pointsRing );
+    let geometry5 = new THREE.BufferGeometry().setFromPoints( pointsPinky );
+	let geometry6 = new THREE.BufferGeometry().setFromPoints( pointsThumb );
+
+    hand = new THREE.Line( geometry1, material );
+    index = new THREE.Line( geometry2, material );
+    middle = new THREE.Line( geometry3, material );	
+    ring = new THREE.Line( geometry4, material );
+    pinky = new THREE.Line( geometry5, material );	
+	thumb = new THREE.Line(geometry6, material);
+
+    scene.add( hand );
+    scene.add( index );
+    scene.add(middle);
+    scene.add( ring );
+    scene.add(pinky);
+	scene.add(thumb);
+    
+	const length = 2
+	const hexHand = "#000000"
+	const hexHandZ = "#000010"
+	const hexIndex1 = "#100000"
+	const hexIndex2 = "#001000"
+	
+	const hexShoulderRef = "#000000"
+	const hexArmRef = "#100000"
+	const hexForeArmRef = "#001010"
+
+
+	let startVectorForeArmRef = new THREE.Vector3( data[13].x,data[13].y,data[13].z );
+	let endVectorForeArmRef = new THREE.Vector3( data[15].x,data[15].y,data[15].z );
+
+	let dirVectorForeArmRef = new THREE.Vector3()
+
+	dirVectorForeArmRef.subVectors(endVectorForeArmRef,startVectorForeArmRef).normalize()
+
+	arrowHelperForeArmRef = new THREE.ArrowHelper( dirVectorForeArmRef, startVectorForeArmRef, length, hexForeArmRef )
+
+	scene.add(arrowHelperForeArmRef)
+
+	//Arrow Helper Arm Ref /////////////////////////////////////////////////////////////////////////////
+
+	let startVectorArmRef = new THREE.Vector3( data[11].x,data[11].y,data[11].z );
+	let endVectorArmRef = new THREE.Vector3( data[13].x,data[13].y,data[13].z );
+
+	let dirVectorArmRef = new THREE.Vector3()
+
+	dirVectorArmRef.subVectors(endVectorArmRef,startVectorArmRef).normalize()
+
+	arrowHelperArmRef = new THREE.ArrowHelper( dirVectorArmRef, startVectorArmRef, length, hexArmRef )
+
+	scene.add(arrowHelperArmRef)
+
+
+	//Arrow Helper Arm Real
+
+	startVectorArm = leftArm.getWorldPosition()
+
+	arrowHelperArm = new THREE.ArrowHelper( dirVectorArmRef, startVectorArm, length, hexArmRef )
+
+	scene.add(arrowHelperArm)
+
+	leftForeArm.rotation.x = 0
+	leftForeArm.rotation.y = 0
+	leftForeArm.rotation.z = 0
+
+	leftArm.rotation.x = 0
+	leftArm.rotation.y = 0
+	leftArm.rotation.z = 0
+
+	leftShoulder.rotation.x = 0
+	leftShoulder.rotation.y = 0
+	leftShoulder.rotation.z = 0
+
+	//Aligninig Shoulder
+
+	let startVectorShoulder = leftShoulder.getWorldPosition()
+	// const originArm = new THREE.Vector3( 0,0,0 );
+	let endVectorShoulder = new THREE.Vector3(1,0,0).normalize();
+
+	const hexShoulder = "#001000"
+
+	arrowHelperShoulder = new THREE.ArrowHelper( endVectorShoulder, startVectorShoulder, length, hexShoulder )
+
+	leftForeArm.applyQuaternion(arrowHelperForeArmRef.getWorldQuaternion())	
+	
+	leftArm.applyQuaternion(arrowHelperArmRef.getWorldQuaternion())
+
+	leftShoulder.applyQuaternion(arrowHelperShoulder.getWorldQuaternion())
+
+	leftArm.applyQuaternion(arrowHelperShoulder.getWorldQuaternion().invert())
+
+	leftForeArm.applyQuaternion(arrowHelperArmRef.getWorldQuaternion().invert())
+
+
+	/////////////////////////////////////////////////////////////////////////////////////////////////
+
+	let startHandRef = new THREE.Vector3(data[0].x,data[0].y,data[0].z)
+
+	let endHandRef = new THREE.Vector3(data[9].x,data[9].y,data[9].z)
+
+	let dirVectorHandRef = new THREE.Vector3()
+
+	dirVectorHandRef.subVectors(endHandRef,startHandRef).normalize()	
+
+	handAngleRef = dirVectorHandRef.angleTo(new THREE.Vector3(1,0,0))
+
+	// leftHand.rotateOnWorldAxis(new THREE.Vector3(0,1,0).normalize(),handAngleY)
+
+	// console.log((-handAngleY+(10*(Math.PI/180)))*(180/Math.PI) + "degree")
+
+	// console.log(-handAngleRef)
+
+	arrowHelperHandRef = new THREE.ArrowHelper( dirVectorHandRef, startHandRef, length, hexHand )
+
+	scene.add(arrowHelperHandRef)
+
+	
+
+
+
+
+
+
+
+	let startHandY = new THREE.Vector3(data[5].x,data[5].y,0)
+
+	let endHandY = new THREE.Vector3(data[17].x,data[17].y,0)
+
+	let dirVectorHandY = new THREE.Vector3()
+
+	dirVectorHandY.subVectors(endHandY,startHandY).normalize()	
+
+	handAngleY = dirVectorHandY.angleTo(new THREE.Vector3(1,0,0))
+
+	leftHand.rotation.y = -handAngleY
+
+	// console.log((-handAngleY+(10*(Math.PI/180)))*(180/Math.PI) + "degree")
+
+	// console.log(-handAngleZ)
+
+	arrowHelperHandY = new THREE.ArrowHelper( dirVectorHandY, startHandY, length, hexHandZ )
+
+	scene.add(arrowHelperHandY)
+
+	leftHand.applyQuaternion(arrowHelperHandRef.getWorldQuaternion())
+
+
+	//Making Index Ref1//////////////////////////////////////////////////////////////////////////////////
+
+	let startIndexRef1 = new THREE.Vector3(data[0].x,data[0].y,data[0].z)
+
+	let endIndexRef1 = new THREE.Vector3(data[6].x,data[6].y,data[6].z)
+
+	// let dirVectorIndexRef1 = new THREE.Vector3()
+
+	// dirVectorIndexRef1.subVectors(endIndexRef1,startIndexRef1).normalize()	
+
+	// arrowHelperIndexRef1 = new THREE.ArrowHelper( dirVectorIndexRef1, startIndexRef1, length, hexIndex1 )
+
+	// scene.add(arrowHelperIndexRef1)
+
+	// leftHandIndex1.applyQuaternion(arrowHelperIndexRef1.getWorldQuaternion())
+
+	// leftHandIndex1.applyQuaternion(leftHand.getWorldQuaternion().invert())
+
+	// //Making Index Ref2//////////////////////////////////////////////////////////////////////////////////
+
+	// let startIndexRef2 = new THREE.Vector3(data[6].x,data[6].y,data[6].z)
+
+	// let endIndexRef2 = new THREE.Vector3(data[7].x,data[7].y,data[7].z)
+
+	// let dirVectorIndexRef2 = new THREE.Vector3()
+
+	// dirVectorIndexRef2.subVectors(endIndexRef2,startIndexRef2).normalize()	
+
+	// arrowHelperIndexRef2 = new THREE.ArrowHelper( dirVectorIndexRef2, startIndexRef2, length, hexIndex2 )
+
+	// scene.add(arrowHelperIndexRef2)
+
+	// leftHandIndex2.applyQuaternion(arrowHelperIndexRef2.getWorldQuaternion())
+
+
+
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	let index1point1 = new THREE.Vector3(data[0].x,data[0].y,data[0].z)
+
+	let index1point2 = new THREE.Vector3(data[5].x,data[5].y,data[5].z)
+	
+	let index1point3 = new THREE.Vector3(data[6].x,data[6].y,data[6].z)
+
+	let index1vector1 = new THREE.Vector3()
+
+	let index1vector2 = new THREE.Vector3()
+
+	index1vector1.subVectors(index1point1,index1point2).normalize()
+
+	index1vector2.subVectors(index1point2,index1point3).normalize()
+
+	let index1angle = index1vector1.angleTo(index1vector2)
+
+
+	console.log((index1angle/65)*90 + "Degrees")
+
+	leftHandIndex1.rotation.x = index1angle
+
+
+
+
+
+
+	//Rotating Index2 Finger ////////////////////////////////////////////////////////////////////////////
+
+	let index2point1 = new THREE.Vector3(data[5].x,data[5].y,data[5].z)
+
+	let index2point2 = new THREE.Vector3(data[6].x,data[6].y,data[6].z)
+	
+	let index2point3 = new THREE.Vector3(data[7].x,data[7].y,data[7].z)
+
+	let index2vector1 = new THREE.Vector3()
+
+	let index2vector2 = new THREE.Vector3()
+
+	index2vector1.subVectors(index2point1,index2point2).normalize()
+
+	index2vector2.subVectors(index2point2,index2point3).normalize()
+
+	let index2angle = index2vector1.angleTo(index2vector2)
+
+
+	console.log(index2angle + "Degrees")
+
+	leftHandIndex2.rotation.x = index2angle
+
+
+	//Rotating Index3 Finger ////////////////////////////////////////////////////////////////////////////
+
+	let index3point1 = new THREE.Vector3(data[6].x,data[6].y,data[6].z)
+
+	let index3point2 = new THREE.Vector3(data[7].x,data[7].y,data[7].z)
+	
+	let index3point3 = new THREE.Vector3(data[8].x,data[8].y,data[8].z)
+
+	let index3vector1 = new THREE.Vector3()
+
+	let index3vector2 = new THREE.Vector3()
+
+	index3vector1.subVectors(index3point1,index3point2).normalize()
+
+	index3vector2.subVectors(index3point2,index3point3).normalize()
+
+	let index3angle = index3vector1.angleTo(index3vector2)
+
+
+	console.log(index3angle + "Degrees")
+
+	leftHandIndex3.rotation.x = index3angle
+	
+
+
+
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	
+	let middle1point1 = new THREE.Vector3(data[0].x,data[0].y,data[0].z)
+
+	let middle1point2 = new THREE.Vector3(data[9].x,data[9].y,data[9].z)
+	
+	let middle1point3 = new THREE.Vector3(data[10].x,data[10].y,data[10].z)
+
+	let middle1vector1 = new THREE.Vector3()
+
+	let middle1vector2 = new THREE.Vector3()
+
+	middle1vector1.subVectors(middle1point1,middle1point2).normalize()
+
+	middle1vector2.subVectors(middle1point2,middle1point3).normalize()
+
+	let middle1angle = middle1vector1.angleTo(middle1vector2)
+
+
+	console.log((middle1angle/65)*90 + "Degrees")
+
+	leftHandMiddle1.rotation.x = middle1angle
+
+
+
+
+
+
+	//Rotating middle2 Finger ////////////////////////////////////////////////////////////////////////////
+
+	let middle2point1 = new THREE.Vector3(data[9].x,data[9].y,data[9].z)
+
+	let middle2point2 = new THREE.Vector3(data[10].x,data[10].y,data[10].z)
+	
+	let middle2point3 = new THREE.Vector3(data[11].x,data[11].y,data[11].z)
+
+	let middle2vector1 = new THREE.Vector3()
+
+	let middle2vector2 = new THREE.Vector3()
+
+	middle2vector1.subVectors(middle2point1,middle2point2).normalize()
+
+	middle2vector2.subVectors(middle2point2,middle2point3).normalize()
+
+	let middle2angle = middle2vector1.angleTo(middle2vector2)
+
+
+	console.log(middle2angle + "Degrees")
+
+	leftHandMiddle2.rotation.x = middle2angle
+
+
+	//Rotating middle3 Finger ////////////////////////////////////////////////////////////////////////////
+
+	let middle3point1 = new THREE.Vector3(data[10].x,data[10].y,data[10].z)
+
+	let middle3point2 = new THREE.Vector3(data[11].x,data[11].y,data[11].z)
+	
+	let middle3point3 = new THREE.Vector3(data[12].x,data[12].y,data[12].z)
+
+	let middle3vector1 = new THREE.Vector3()
+
+	let middle3vector2 = new THREE.Vector3()
+
+	middle3vector1.subVectors(middle3point1,middle3point2).normalize()
+
+	middle3vector2.subVectors(middle3point2,middle3point3).normalize()
+
+	let middle3angle = middle3vector1.angleTo(middle3vector2)
+
+
+	console.log(middle3angle + "Degrees")
+
+	leftHandMiddle3.rotation.x = middle3angle
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	
+	let ring1point1 = new THREE.Vector3(data[0].x,data[0].y,data[0].z)
+
+	let ring1point2 = new THREE.Vector3(data[13].x,data[13].y,data[13].z)
+	
+	let ring1point3 = new THREE.Vector3(data[14].x,data[14].y,data[14].z)
+
+	let ring1vector1 = new THREE.Vector3()
+
+	let ring1vector2 = new THREE.Vector3()
+
+	ring1vector1.subVectors(ring1point1,ring1point2).normalize()
+
+	ring1vector2.subVectors(ring1point2,ring1point3).normalize()
+
+	let ring1angle = ring1vector1.angleTo(ring1vector2)
+
+
+	console.log((ring1angle/65)*90 + "Degrees")
+
+	leftHandRing1.rotation.x = ring1angle
+
+
+
+
+
+
+	//Rotating middle2 Finger ////////////////////////////////////////////////////////////////////////////
+
+	let ring2point1 = new THREE.Vector3(data[13].x,data[13].y,data[13].z)
+
+	let ring2point2 = new THREE.Vector3(data[14].x,data[14].y,data[14].z)
+	
+	let ring2point3 = new THREE.Vector3(data[15].x,data[15].y,data[15].z)
+
+	let ring2vector1 = new THREE.Vector3()
+
+	let ring2vector2 = new THREE.Vector3()
+
+	ring2vector1.subVectors(ring2point1,ring2point2).normalize()
+
+	ring2vector2.subVectors(ring2point2,ring2point3).normalize()
+
+	let ring2angle = ring2vector1.angleTo(ring2vector2)
+
+
+	console.log(ring2angle + "Degrees")
+
+	leftHandRing2.rotation.x = ring2angle
+
+
+	//Rotating middle3 Finger ////////////////////////////////////////////////////////////////////////////
+
+	let ring3point1 = new THREE.Vector3(data[14].x,data[14].y,data[14].z)
+
+	let ring3point2 = new THREE.Vector3(data[15].x,data[15].y,data[15].z)
+	
+	let ring3point3 = new THREE.Vector3(data[16].x,data[16].y,data[16].z)
+
+	let ring3vector1 = new THREE.Vector3()
+
+	let ring3vector2 = new THREE.Vector3()
+
+	ring3vector1.subVectors(ring3point1,ring3point2).normalize()
+
+	ring3vector2.subVectors(ring3point2,ring3point3).normalize()
+
+	let ring3angle = ring3vector1.angleTo(ring3vector2)
+
+
+	console.log(ring3angle + "Degrees")
+
+	leftHandRing3.rotation.x = ring3angle
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	
+let pinky1point1 = new THREE.Vector3(data[0].x,data[0].y,data[0].z)
+
+let pinky1point2 = new THREE.Vector3(data[17].x,data[17].y,data[17].z)
+
+let pinky1point3 = new THREE.Vector3(data[18].x,data[18].y,data[18].z)
+
+let pinky1vector1 = new THREE.Vector3()
+
+let pinky1vector2 = new THREE.Vector3()
+
+pinky1vector1.subVectors(pinky1point1,pinky1point2).normalize()
+
+pinky1vector2.subVectors(pinky1point2,pinky1point3).normalize()
+
+let pinky1angle = pinky1vector1.angleTo(pinky1vector2)
+
+
+console.log((pinky1angle/65)*90 + "Degrees")
+
+leftHandPinky1.rotation.x = pinky1angle
+
+
+
+
+
+
+//Rotating middle2 Finger ////////////////////////////////////////////////////////////////////////////
+
+let pinky2point1 = new THREE.Vector3(data[17].x,data[17].y,data[17].z)
+
+let pinky2point2 = new THREE.Vector3(data[18].x,data[18].y,data[18].z)
+
+let pinky2point3 = new THREE.Vector3(data[19].x,data[19].y,data[19].z)
+
+let pinky2vector1 = new THREE.Vector3()
+
+let pinky2vector2 = new THREE.Vector3()
+
+pinky2vector1.subVectors(pinky2point1,pinky2point2).normalize()
+
+pinky2vector2.subVectors(pinky2point2,pinky2point3).normalize()
+
+let pinky2angle = pinky2vector1.angleTo(pinky2vector2)
+
+
+console.log(pinky2angle + "Degrees")
+
+leftHandPinky2.rotation.x = pinky2angle
+
+
+//Rotating middle3 Finger ////////////////////////////////////////////////////////////////////////////
+
+let pinky3point1 = new THREE.Vector3(data[18].x,data[18].y,data[18].z)
+
+let pinky3point2 = new THREE.Vector3(data[19].x,data[19].y,data[19].z)
+
+let pinky3point3 = new THREE.Vector3(data[20].x,data[20].y,data[20].z)
+
+let pinky3vector1 = new THREE.Vector3()
+
+let pinky3vector2 = new THREE.Vector3()
+
+pinky3vector1.subVectors(pinky3point1,pinky3point2).normalize()
+
+pinky3vector2.subVectors(pinky3point2,pinky3point3).normalize()
+
+let pinky3angle = pinky3vector1.angleTo(pinky3vector2)
+
+
+console.log(pinky3angle + "Degrees")
+
+leftHandPinky3.rotation.x = pinky3angle
+
+
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	
+// let thumb1point1 = new THREE.Vector3(data[0].x,data[0].y,data[0].z)
+
+// let thumb1point2 = new THREE.Vector3(data[1].x,data[1].y,data[1].z)
+
+// let thumb1point3 = new THREE.Vector3(data[2].x,data[2].y,data[2].z)
+
+// let thumb1vector1 = new THREE.Vector3()
+
+// let thumb1vector2 = new THREE.Vector3()
+
+// thumb1vector1.subVectors(pinky1point1,pinky1point2).normalize()
+
+// thumb1vector2.subVectors(pinky1point2,pinky1point3).normalize()
+
+// let thumb1angle = pinky1vector1.angleTo(pinky1vector2)
+
+// leftHandThumb1.rotation.z = -thumb1angle + 30*((Math.PI)/180)
+
+
+
+
+
+
+//Rotating middle2 Finger ////////////////////////////////////////////////////////////////////////////
+
+let thumb2point1 = new THREE.Vector3(data[1].x,data[1].y,data[1].z)
+
+let thumb2point2 = new THREE.Vector3(data[2].x,data[2].y,data[2].z)
+
+let thumb2point3 = new THREE.Vector3(data[3].x,data[3].y,data[3].z)
+
+let thumb2vector1 = new THREE.Vector3()
+
+let thumb2vector2 = new THREE.Vector3()
+
+thumb2vector1.subVectors(thumb2point1,thumb2point2).normalize()
+
+thumb2vector2.subVectors(thumb2point2,thumb2point3).normalize()
+
+let thumb2angle = thumb2vector1.angleTo(thumb2vector2)
+
+
+leftHandThumb2.rotation.z = -thumb2angle + 0*((Math.PI)/180)
+
+
+//Rotating middle3 Finger ////////////////////////////////////////////////////////////////////////////
+
+let thumb3point1 = new THREE.Vector3(data[2].x,data[2].y,data[2].z)
+
+let thumb3point2 = new THREE.Vector3(data[3].x,data[3].y,data[3].z)
+
+let thumb3point3 = new THREE.Vector3(data[4].x,data[4].y,data[4].z)
+
+let thumb3vector1 = new THREE.Vector3()
+
+let thumb3vector2 = new THREE.Vector3()
+
+thumb3vector1.subVectors(thumb3point1,thumb3point2).normalize()
+
+thumb3vector2.subVectors(thumb3point2,thumb3point3).normalize()
+
+let thumb3angle = thumb3vector1.angleTo(thumb3vector2)
+
+
+leftHandThumb3.rotation.z = -thumb3angle + 0*((Math.PI)/180)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	// let dirVectorIndexRef1 = new THREE.Vector3()
+
+	// dirVectorIndexRef1.subVectors(endIndexRef1,startIndexRef1).normalize()	
+
+	// arrowHelperIndexRef1 = new THREE.ArrowHelper( dirVectorIndexRef1, startIndexRef1, length, hexIndex1 )
+
+	// scene.add(arrowHelperIndexRef1)
+
+	// leftHandIndex1.applyQuaternion(arrowHelperIndexRef1.getWorldQuaternion())
+
+	// leftHandIndex1.applyQuaternion(leftHand.getWorldQuaternion().invert())
+
+
+})
+
+function animate() {
+
+	requestAnimationFrame( animate )
+
+	// leftHandIndex1.rotation.x = 1
+	// leftHandIndex2.rotation.x = 1.5
+
+	// leftHandIndex1.rotation.x += 0.05
+	// leftHandThumb1.rotation.z = -0.2
+	// leftHandThumb2.rotation.z = -1.5
+	// leftHandThumb3.rotation.z = -1.5
+
+	renderer.render( scene, camera )
+}
+    </script>
+</body>
+</html>

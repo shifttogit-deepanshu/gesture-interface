@@ -70,7 +70,9 @@ function init() {
 	const helper = new THREE.SkeletonHelper( model );
 	scene.add( helper )	
 	
-	
+	leftHand.rotation.x = 0
+	leftHand.rotation.y = 0
+	leftHand.rotation.z = 0
 	
 	leftArm.rotation.x = 0
 	leftArm.rotation.y = 0
@@ -79,6 +81,10 @@ function init() {
 	leftShoulder.rotation.x = 0
 	leftShoulder.rotation.y = 0
 	leftShoulder.rotation.z = 0
+	
+	leftForeArm.rotation.x = 0
+	leftForeArm.rotation.y = 0
+	leftForeArm.rotation.z = 0
 
 	// const length = 2
 	// const hexShoulder = "#000000"
@@ -346,9 +352,8 @@ if(arrowHelperForeArmRef){
 	leftArm.applyQuaternion(arrowHelperShoulder.getWorldQuaternion().invert())
 
 	leftForeArm.applyQuaternion(arrowHelperArmRef.getWorldQuaternion().invert())
-
-
 })
+
 
 
 function animate() {
